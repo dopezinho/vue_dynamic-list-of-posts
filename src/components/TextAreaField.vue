@@ -1,5 +1,6 @@
 <script setup>
 import { ErrorMessages } from '@/utils/ErrorMessages'
+
 defineProps({
   modelValue: {
     type: String,
@@ -16,10 +17,6 @@ defineProps({
   placeholder: {
     type: String,
     default: '',
-  },
-  type: {
-    default: 'text',
-    type: String,
   },
   disabled: {
     type: Boolean,
@@ -46,7 +43,8 @@ const onInput = (event) => {
   <div class="field" data-cy="BodyField">
     <label class="label" :for="name">{{ title }}</label>
 
-    <div class="control">
+    <!-- ✅ FIX: Add has-icons-right -->
+    <div class="control has-icons-right">
       <textarea
         :id="name"
         class="textarea"
@@ -54,7 +52,6 @@ const onInput = (event) => {
         :name="name"
         :placeholder="placeholder"
         :value="modelValue"
-        :type="type"
         :disabled="disabled"
         @input="onInput"
       ></textarea>
@@ -64,6 +61,8 @@ const onInput = (event) => {
       </span>
     </div>
 
-    <p v-if="error" class="help is-danger" data-cy="ErrorMessage">{{ error }}</p>
+    <p v-if="error" class="help is-danger" data-cy="ErrorMessage">
+      {{ error }}
+    </p>
   </div>
 </template>

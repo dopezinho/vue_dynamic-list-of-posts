@@ -12,21 +12,34 @@ const currentPost = defineModel('currentPost', {
 
 const comments = ref([])
 const newCommentFormIsShown = ref(false)
+
+/** Loading & error for fetching comments list */
 const isLoading = ref(false)
+const commentsError = ref('') // <-- visible error for list load
+
+/** Parent-owned comment form state (persist name/email) */
+const commentName = ref('')
+const commentEmail = ref('')
+const commentBody = ref('')
+
+/** Submit state & error for form */
+const isSubmittingComment = ref(false)
+const submitError = ref('')
 
 const onShowPost = async () => {
-  if (!currentPost.value?.id) {
-    return
-  }
+  if (!currentPost.value?.id) return
 
-  showCommentForm(false)
+  // reset list errors and show loader
+  commentsError.value = ''
   isLoading.value = true
+  newCommentFormIsShown.value = false
 
   try {
     comments.value = await getComments(currentPost.value.id)
   } catch (error) {
-    console.error(error)
+    // user-facing error for failed load
     comments.value = []
+    commentsError.value = 'Failed to load comments. Please try again.'
   } finally {
     isLoading.value = false
   }
@@ -36,27 +49,37 @@ const emit = defineEmits(['delete', 'edit'])
 
 const showCommentForm = (show) => {
   newCommentFormIsShown.value = show
+  submitError.value = ''
 }
 
 const createComment = async (name, email, body) => {
+  // keep form open; set local submit loading and clear previous error
+  isSubmittingComment.value = true
+  submitError.value = ''
+
   try {
     const newComment = await addComment(currentPost.value.id, name, email, body)
     comments.value.push(newComment)
-    showCommentForm(false)
+
+    // ✅ keep name & email; clear only body on success
+    commentBody.value = ''
+    // (Optionally keep form open for multiple comments)
   } catch (error) {
-    console.log(error)
+    // show user-facing submit error; keep form open for retry
+    submitError.value = 'Could not add the comment. Please try again.'
+  } finally {
+    isSubmittingComment.value = false
   }
 }
 
 const removeComment = async (id) => {
-  const originalComments = [...comments.value]
-  comments.value = comments.value.filter((comment) => comment.id !== id)
-
+  const original = [...comments.value]
+  comments.value = comments.value.filter((c) => c.id !== id)
   try {
     await deleteComment(id)
   } catch (error) {
-    console.error(error)
-    comments.value = originalComments
+    comments.value = original
+    // (Optional) add a toast/notification here if desired
   }
 }
 
@@ -65,6 +88,18 @@ watch(() => currentPost.value, onShowPost, { deep: true })
 </script>
 
 <template>
+  <!-- Comments load error (user-facing) -->
+  <div
+    v-if="commentsError && !isLoading"
+    class="notification is-danger"
+    data-cy="CommentsError"
+    role="alert"
+    style="margin-bottom: 0.75rem"
+  >
+    <button class="delete" @click="commentsError = ''" aria-label="dismiss"></button>
+    {{ commentsError }}
+  </div>
+
   <Loader v-if="isLoading" />
 
   <div class="block" v-if="!isLoading">
@@ -87,7 +122,7 @@ watch(() => currentPost.value, onShowPost, { deep: true })
 
     <p data-cy="PostBody">{{ currentPost.body }}</p>
 
-    <div class="block" v-if="comments.length === 0">
+    <div class="block" v-if="comments.length === 0 && !newCommentFormIsShown && !commentsError">
       <p class="title is-4">No comments yet</p>
     </div>
 
@@ -100,8 +135,14 @@ watch(() => currentPost.value, onShowPost, { deep: true })
       />
     </template>
 
+    <!-- NewCommentForm with parent-managed state and submit loading -->
     <NewCommentForm
       v-if="newCommentFormIsShown"
+      v-model:name="commentName"
+      v-model:email="commentEmail"
+      v-model:body="commentBody"
+      :submitting="isSubmittingComment"     <!-- controls is-loading on button -->
+      :error="submitError"                  <!-- show user-facing submit error -->
       @submit="createComment"
       @cancel="showCommentForm(false)"
     />
