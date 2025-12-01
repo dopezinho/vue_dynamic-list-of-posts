@@ -14,11 +14,18 @@ const name = ref('')
 const emailError = ref('')
 const nameError = ref('')
 const userNoRegistered = ref(false)
+const globalError = ref('') // ✅ user-facing error message
 
 const register = async () => {
+  // reset errors for a fresh attempt
+  globalError.value = ''
+  nameError.value = ''
+  emailError.value = ''
+
   if (!name.value.trim()) {
     nameError.value = ErrorMessages.Name_Is_Required
   }
+
   if (emailError.value || nameError.value) {
     return
   }
@@ -28,11 +35,16 @@ const register = async () => {
     setUser(newUser)
     user.value = newUser
   } catch (error) {
-    throw new Error(error)
+    console.error('Register error:', error)
+    globalError.value = 'Failed to register. Please try again later.'
   }
 }
 
 const login = async () => {
+  // reset errors for a fresh attempt
+  globalError.value = ''
+  emailError.value = ''
+
   if (!email.value.trim()) {
     emailError.value = ErrorMessages.Email_Is_Required
   }
@@ -42,21 +54,30 @@ const login = async () => {
   }
 
   try {
-    const fetchedUser = (await getUser(email.value))[0]
+    // getUser now returns User[]
+    const fetchedUsers = await getUser(email.value.trim())
+    const fetchedUser = fetchedUsers[0]
+
     if (!fetchedUser) {
       userNoRegistered.value = true
       return
-    } else {
-      setUser(fetchedUser)
-      user.value = fetchedUser
     }
+
+    setUser(fetchedUser)
+    user.value = fetchedUser
   } catch (error) {
-    throw new Error(error)
+    console.error('Login error:', error)
+    globalError.value = 'Failed to login. Please try again later.'
   }
 }
 
-const submit = () => {
-  userNoRegistered.value ? register() : login()
+// ✅ make submit async and await the calls
+const submit = async () => {
+  if (userNoRegistered.value) {
+    await register()
+  } else {
+    await login()
+  }
 }
 </script>
 
@@ -64,6 +85,10 @@ const submit = () => {
   <section class="container is-flex is-justify-content-center">
     <form class="box mt-5" @submit.prevent="submit">
       <h1 class="title is-3">Get your userId</h1>
+
+      <div v-if="globalError" class="notification is-danger is-light">
+        {{ globalError }}
+      </div>
 
       <InputField
         v-model="email"

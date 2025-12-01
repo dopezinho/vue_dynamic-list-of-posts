@@ -16,6 +16,7 @@ const handleLogout = () => {
     <div class="navbar-item">
       <h1 class="title is-size-4">Vue List Of Posts</h1>
     </div>
+
     <div class="navbar-end">
       <div class="navbar-item">
         <div class="buttons">
@@ -23,7 +24,8 @@ const handleLogout = () => {
             <p>User: {{ user?.name }}</p>
           </div>
 
-          <a class="button is-light" @click="handleLogout"> Logout </a>
+          <!-- ✅ Correct semantic element -->
+          <button type="button" class="button is-light" @click="handleLogout">Logout</button>
         </div>
       </div>
     </div>

@@ -23,8 +23,6 @@ export const addComment = async (
   return response.data
 }
 
-export const deleteComment = async (id: number) => {
-  const response = await client.delete(`/comments/${id}`)
-
-  return response.data
+export const deleteComment = async (id: number): Promise<void> => {
+  await client.delete(`/comments/${id}`)
 }

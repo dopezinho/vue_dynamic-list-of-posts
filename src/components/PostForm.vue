@@ -13,6 +13,10 @@ const props = defineProps({
   currentPost: {
     type: Object,
   },
+  submitting: {
+    type: Boolean,
+    default: false,
+  },
 })
 
 const localTitle = ref('')
@@ -23,7 +27,7 @@ const bodyError = ref('')
 const emit = defineEmits(['update:currentPost', 'submit', 'cancel'])
 
 onMounted(() => {
-  if (props.mode === 'edit') {
+  if (props.mode === 'edit' && props.currentPost) {
     localTitle.value = props.currentPost.title
     localBody.value = props.currentPost.body
   }
@@ -63,6 +67,7 @@ const handleSubmit = () => {
         name="title"
         placeholder="Post title"
         icon="fa-user"
+        :disabled="submitting"
         @update:modelValue="(val) => (localTitle = val)"
       />
 
@@ -72,18 +77,29 @@ const handleSubmit = () => {
         title="Write Post Body"
         name="body"
         placeholder="Post body"
+        :disabled="submitting"
         @update:modelValue="(val) => (localBody = val)"
       />
 
       <div class="field is-grouped">
         <div class="control">
-          <button type="submit" class="button is-link">
+          <button
+            type="submit"
+            class="button is-link"
+            :class="{ 'is-loading': submitting }"
+            :disabled="submitting"
+          >
             {{ mode === 'create' ? 'Create' : 'Save' }}
           </button>
         </div>
 
         <div class="control">
-          <button type="reset" class="button is-link is-light" @click="emit('cancel')">
+          <button
+            type="reset"
+            class="button is-link is-light"
+            :disabled="submitting"
+            @click="emit('cancel')"
+          >
             Cancel
           </button>
         </div>
